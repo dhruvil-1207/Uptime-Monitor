@@ -62,5 +62,17 @@ const processDueMonitors = async () => {
   await Promise.all(workers);
 
 };
-await processDueMonitors();
-// export { processDueMonitors };
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+const startMonitorWorker = async () => {
+  while (true) {
+    try {
+      await processDueMonitors();
+    } catch (err) {
+      console.error('Monitor worker error:', err);
+    }
+
+    await sleep(5000);
+  }
+};
+
+export { startMonitorWorker };
