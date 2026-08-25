@@ -1,6 +1,10 @@
+import pool from '../config/db.js';
+
 import { claimDueMonitors } from './monitorScheduler.js';
 import { checkMonitor } from './monitorChecker.js';
 import { saveCheckResult } from './checkResultService.js';
+import { updateMonitorStatus } from './monitorStatusService.js';
+import { handleMonitorState } from './monitorStateService.js';
 
 const processDueMonitors = async () => {
 
@@ -16,8 +20,36 @@ const processDueMonitors = async () => {
       console.log(`Checking monitor ${monitor.id} at ${new Date().toISOString()}`);
 
       const result = await checkMonitor(monitor);
+      const client = await pool.connect();
 
-      await saveCheckResult(monitor.id, result);
+      try {
+        await client.query('BEGIN');
+
+        const newStatus = result.isUp ? 'UP' : 'DOWN';
+
+        await handleMonitorState(client, monitor, monitor.current_status, newStatus, result);
+
+        await updateMonitorStatus(client, monitor.id, newStatus, result.checkedAt);
+
+        await saveCheckResult(client, monitor.id, result);
+
+        await client.query('COMMIT');
+      } 
+      catch (err) {
+        try {
+          await client.query('ROLLBACK');
+        } catch (rollbackError) {
+          console.error('Rollback failed:', rollbackError);
+        }
+
+        console.error(
+          `Failed to process monitor ${monitor.id}:`,
+          err
+        );
+      } 
+      finally {
+        client.release();
+      }
     }
   };
 

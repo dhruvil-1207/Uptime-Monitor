@@ -1,4 +1,5 @@
 const checkMonitor = async (monitor) => {
+  const checkedAt = new Date();
   const startTime = performance.now();
 
   const controller = new AbortController();
@@ -20,6 +21,7 @@ const checkMonitor = async (monitor) => {
     );
 
     return {
+      checkedAt,
       isUp,
       statusCode: response.status,
       responseTimeMs,
@@ -32,6 +34,7 @@ const checkMonitor = async (monitor) => {
 
     if (err.name === 'AbortError') {
       return {
+        checkedAt,
         isUp: false,
         statusCode: null,
         responseTimeMs,
@@ -40,6 +43,7 @@ const checkMonitor = async (monitor) => {
     }
 
     return {
+      checkedAt,
       isUp: false,
       statusCode: null,
       responseTimeMs,

@@ -6,20 +6,21 @@ const claimDueMonitors = async () => {
   let result;
   try{  
     await client.query('BEGIN');
-    result = await client.query(`
-      SELECT
-        id,
-        url,
-        interval_seconds,
-        timeout_seconds,
-        expected_status_code
-      FROM monitors
-      WHERE is_active = TRUE
-        AND next_check_at <= NOW()
-      ORDER BY next_check_at
-      LIMIT 50
-      FOR UPDATE SKIP LOCKED
-    `);
+    const result = await client.query(`
+    SELECT
+      id,
+      url,
+      interval_seconds,
+      timeout_seconds,
+      expected_status_code,
+      current_status
+    FROM monitors
+    WHERE is_active = TRUE
+      AND next_check_at <= NOW()
+    ORDER BY next_check_at
+    LIMIT 50
+    FOR UPDATE SKIP LOCKED
+  `);
 
     for (const monitor of result.rows) {
       await client.query(
