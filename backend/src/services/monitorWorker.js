@@ -5,6 +5,7 @@ import { checkMonitor } from './monitorChecker.js';
 import { saveCheckResult } from './checkResultService.js';
 import { updateMonitorStatus } from './monitorStatusService.js';
 import { handleMonitorState } from './monitorStateService.js';
+import { sendDownNotification, sendRecoveryNotification } from './notificationService.js';
 
 const processDueMonitors = async () => {
 
@@ -27,13 +28,46 @@ const processDueMonitors = async () => {
 
         const newStatus = result.isUp ? 'UP' : 'DOWN';
 
-        await handleMonitorState(client, monitor, monitor.current_status, newStatus, result);
+        const notification = await handleMonitorState(
+          client,
+          monitor,
+          monitor.current_status,
+          newStatus,
+          result
+        );
 
-        await updateMonitorStatus(client, monitor.id, newStatus, result.checkedAt);
+        await updateMonitorStatus(
+          client,
+          monitor.id,
+          newStatus,
+          result.checkedAt
+        );
 
-        await saveCheckResult(client, monitor.id, result);
+        await saveCheckResult(
+          client,
+          monitor.id,
+          result
+        );
 
         await client.query('COMMIT');
+
+        if (notification) {
+          if (notification.type === 'DOWN') {
+            await sendDownNotification(
+              monitor.email,
+              monitor,
+              notification.incident
+            );
+          }
+
+          else if (notification.type === 'RECOVERY') {
+            await sendRecoveryNotification(
+              monitor.email,
+              monitor,
+              notification.incident
+            );
+          }
+        }
       } 
       catch (err) {
         try {

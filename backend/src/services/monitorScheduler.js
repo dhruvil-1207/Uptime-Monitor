@@ -3,21 +3,23 @@ import pool from '../config/db.js';
 const claimDueMonitors = async () => {
 
   const client = await pool.connect();
-  let result;
   try{  
     await client.query('BEGIN');
     const result = await client.query(`
     SELECT
-      id,
-      url,
-      interval_seconds,
-      timeout_seconds,
-      expected_status_code,
-      current_status
-    FROM monitors
-    WHERE is_active = TRUE
-      AND next_check_at <= NOW()
-    ORDER BY next_check_at
+      m.id,
+      m.name,
+      m.url,
+      m.interval_seconds,
+      m.timeout_seconds,
+      m.expected_status_code,
+      m.current_status,
+      u.email
+    FROM monitors m
+    JOIN users u ON u.id = m.user_id
+    WHERE m.is_active = TRUE
+      AND m.next_check_at <= NOW()
+    ORDER BY m.next_check_at
     LIMIT 50
     FOR UPDATE SKIP LOCKED
   `);
