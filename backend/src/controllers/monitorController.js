@@ -272,23 +272,35 @@ const updateMonitor = async (req, res) => {
         message: 'Name must be a non-empty string'
       });
     }
+    updates.name = updates.name.trim();
   }
 
   if ('url' in updates) {
-    if (typeof updates.url !== 'string') {
+    const url = updates.url?.trim();
+
+    if (typeof url !== 'string') {
       return res.status(400).json({
         message: 'URL must be a string'
       });
     }
 
     try {
-      const parsedUrl = new URL(updates.url);
+      const parsedUrl = new URL(url);
 
       if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
         return res.status(400).json({
           message: 'URL must use HTTP or HTTPS'
         });
       }
+
+      if (parsedUrl.username || parsedUrl.password) {
+        return res.status(400).json({
+          message: 'URL must not contain username or password'
+        });
+      }
+
+      updates.url = url;
+
     } catch {
       return res.status(400).json({
         message: 'Invalid URL'
@@ -297,12 +309,11 @@ const updateMonitor = async (req, res) => {
   }
 
   if ('interval_seconds' in updates) {
-    if (
-      !Number.isInteger(updates.interval_seconds) ||
-      updates.interval_seconds <= 0
-    ) {
+    const allowedIntervals = [60, 300, 600, 1800, 3600];
+
+    if (!allowedIntervals.includes(updates.interval_seconds)) {
       return res.status(400).json({
-        message: 'Interval must be a positive integer'
+        message: 'Invalid interval'
       });
     }
   }
@@ -310,10 +321,11 @@ const updateMonitor = async (req, res) => {
   if ('timeout_seconds' in updates) {
     if (
       !Number.isInteger(updates.timeout_seconds) ||
-      updates.timeout_seconds <= 0
+      updates.timeout_seconds < 1 ||
+      updates.timeout_seconds > 30
     ) {
       return res.status(400).json({
-        message: 'Timeout must be a positive integer'
+        message: 'Timeout must be between 1 and 30 seconds'
       });
     }
   }

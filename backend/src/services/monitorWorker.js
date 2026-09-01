@@ -6,7 +6,7 @@ import { saveCheckResult } from './checkResultService.js';
 import { updateMonitorStatus } from './monitorStatusService.js';
 import { handleMonitorState } from './monitorStateService.js';
 import { sendDownNotification, sendRecoveryNotification } from './notificationService.js';
-
+let isRunning = true;
 const processDueMonitors = async () => {
 
   const monitors = await claimDueMonitors();
@@ -52,24 +52,29 @@ const processDueMonitors = async () => {
         await client.query('COMMIT');
 
         if (notification) {
-          if (notification.type === 'DOWN') {
-            await sendDownNotification(
-              monitor.email,
-              monitor,
-              notification.incident
-            );
-          }
-
-          else if (notification.type === 'RECOVERY') {
-            await sendRecoveryNotification(
-              monitor.email,
-              monitor,
-              notification.incident
+          try {
+            if (notification.type === 'DOWN') {
+              await sendDownNotification(
+                monitor.email,
+                monitor,
+                notification.incident
+              );
+            } else if (notification.type === 'RECOVERY') {
+              await sendRecoveryNotification(
+                monitor.email,
+                monitor,
+                notification.incident
+              );
+            }
+          } catch (err) {
+            console.error(
+              `Failed to send notification for monitor ${monitor.id}:`,
+              err
             );
           }
         }
-      } 
-      catch (err) {
+
+      } catch (err) {
         try {
           await client.query('ROLLBACK');
         } catch (rollbackError) {
@@ -80,8 +85,8 @@ const processDueMonitors = async () => {
           `Failed to process monitor ${monitor.id}:`,
           err
         );
-      } 
-      finally {
+
+      } finally {
         client.release();
       }
     }
@@ -96,9 +101,11 @@ const processDueMonitors = async () => {
   await Promise.all(workers);
 
 };
+
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
 const startMonitorWorker = async () => {
-  while (true) {
+  while (isRunning) {
     try {
       await processDueMonitors();
     } catch (err) {
@@ -109,4 +116,8 @@ const startMonitorWorker = async () => {
   }
 };
 
-export { startMonitorWorker };
+const stopMonitorWorker = () => {
+  isRunning = false;
+};
+
+export { startMonitorWorker, stopMonitorWorker };
