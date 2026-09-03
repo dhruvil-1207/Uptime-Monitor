@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Dashboard from './pages/Dashboard';
 import { LogOut, Activity } from 'lucide-react';
 
 const Header = () => {
@@ -50,14 +51,7 @@ function AppRoutes() {
       
       {/* Authenticated Routes */}
       <Route element={<ProtectedRoute />}>
-        <Route path="/dashboard" element={
-          <Layout>
-            <div className="p-8 border border-slate-800 rounded-xl bg-slate-800/30">
-              <h2 className="text-xl mb-4 font-semibold">Dashboard Placeholder</h2>
-              <p className="text-slate-400 text-sm">Will be implemented in Phase 3. You are authenticated!</p>
-            </div>
-          </Layout>
-        } />
+        <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
       </Route>
     </Routes>
   );
