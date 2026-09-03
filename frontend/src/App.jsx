@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import MonitorForm from './pages/MonitorForm';
+import MonitorDetails from './pages/MonitorDetails';
 import { LogOut, Activity } from 'lucide-react';
 
 const Header = () => {
@@ -55,6 +56,7 @@ function AppRoutes() {
         <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
         <Route path="/monitors/new" element={<Layout><MonitorForm /></Layout>} />
         <Route path="/monitors/:id/edit" element={<Layout><MonitorForm /></Layout>} />
+        <Route path="/monitors/:id" element={<Layout><MonitorDetails /></Layout>} />
       </Route>
     </Routes>
   );

@@ -191,7 +191,7 @@ const Dashboard = () => {
                     <StatusIcon status={monitor.current_status} className="w-6 h-6" />
                   </div>
                   <div>
-                    <Link to={`/monitors/${monitor.id}/edit`} className="font-semibold text-white text-lg hover:text-primary transition-colors focus:outline-none">
+                    <Link to={`/monitors/${monitor.id}`} className="font-semibold text-white text-lg hover:text-primary transition-colors focus:outline-none">
                       {monitor.name}
                     </Link>
                     <div className="flex items-center gap-2 text-slate-400 text-sm mt-0.5">
