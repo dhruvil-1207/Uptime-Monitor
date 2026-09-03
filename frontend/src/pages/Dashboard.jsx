@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import client from '../api/client';
-import { Plus, Activity, CheckCircle2, XCircle, HelpCircle, Clock, ExternalLink } from 'lucide-react';
+import { Plus, Activity, CheckCircle2, XCircle, HelpCircle, Clock, ExternalLink, Play, Pause, Trash2 } from 'lucide-react';
 
 const Dashboard = () => {
   const [monitors, setMonitors] = useState([]);
@@ -22,6 +22,28 @@ const Dashboard = () => {
     }
   };
 
+  const handleToggleStatus = async (id, currentStatus) => {
+    try {
+      setMonitors(prev => prev.map(m => m.id === id ? { ...m, is_active: !currentStatus } : m));
+      await client.patch(`/api/monitors/${id}/status`, { is_active: !currentStatus });
+    } catch (err) {
+      // revert on failure
+      setMonitors(prev => prev.map(m => m.id === id ? { ...m, is_active: currentStatus } : m));
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this monitor? This will remove the monitor and its associated monitoring data.')) return;
+    
+    try {
+      await client.delete(`/api/monitors/${id}`);
+      setMonitors(prev => prev.filter(m => m.id !== id));
+    } catch (err) {
+      alert('Failed to delete monitor.');
+    }
+  };
+
+  // ... (use effect and stats remain the same) ...
   useEffect(() => {
     fetchMonitors();
 
@@ -153,10 +175,9 @@ const Dashboard = () => {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {monitors.map((monitor) => (
-            <Link
+            <div
               key={monitor.id}
-              to={`/monitors/${monitor.id}`}
-              className="group p-5 border border-slate-800 rounded-xl bg-slate-800/30 hover:bg-slate-800/50 hover:border-slate-700 transition-all block relative overflow-hidden"
+              className="group p-5 border border-slate-800 rounded-xl bg-slate-800/30 hover:bg-slate-800/50 hover:border-slate-700 transition-all relative overflow-hidden flex flex-col"
             >
               {!monitor.is_active && (
                 <div className="absolute top-0 right-0 p-1.5 px-3 bg-slate-800/80 rounded-bl-lg text-xs font-medium text-slate-400 border-b border-l border-slate-700">
@@ -170,12 +191,12 @@ const Dashboard = () => {
                     <StatusIcon status={monitor.current_status} className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-white text-lg group-hover:text-primary transition-colors">
+                    <Link to={`/monitors/${monitor.id}/edit`} className="font-semibold text-white text-lg hover:text-primary transition-colors focus:outline-none">
                       {monitor.name}
-                    </h3>
+                    </Link>
                     <div className="flex items-center gap-2 text-slate-400 text-sm mt-0.5">
                       <ExternalLink className="w-3.5 h-3.5" />
-                      <span className="truncate max-w-[200px] sm:max-w-[300px]">{monitor.url}</span>
+                      <span className="truncate max-w-[200px] sm:max-w-[280px]">{monitor.url}</span>
                     </div>
                   </div>
                 </div>
@@ -184,17 +205,44 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-6 mt-6 pt-4 border-t border-slate-800/50 text-xs text-slate-400">
-                <div className="flex items-center gap-1.5">
-                  <Clock className="w-4 h-4 text-slate-500" />
-                  {monitor.interval_seconds >= 60 ? `${monitor.interval_seconds / 60}m interval` : `${monitor.interval_seconds}s interval`}
+              <div className="mt-auto pt-4 border-t border-slate-800/50 flex items-center justify-between">
+                <div className="flex items-center gap-4 text-xs text-slate-400">
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="w-4 h-4 text-slate-500" />
+                    {monitor.interval_seconds >= 60 ? `${monitor.interval_seconds / 60}m` : `${monitor.interval_seconds}s`}
+                  </div>
+                  <div className="flex items-center gap-1.5" title={monitor.last_checked_at ? new Date(monitor.last_checked_at).toLocaleString() : 'Never'}>
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-600"></span>
+                    {monitor.last_checked_at ? new Date(monitor.last_checked_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Never'}
+                  </div>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-slate-600"></span>
-                  Last checked: {monitor.last_checked_at ? new Date(monitor.last_checked_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Never'}
+                
+                {/* Quick Actions */}
+                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={() => handleToggleStatus(monitor.id, monitor.is_active)}
+                    className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded-md transition-colors"
+                    title={monitor.is_active ? "Pause Monitor" : "Resume Monitor"}
+                  >
+                    {monitor.is_active ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                  </button>
+                  <Link 
+                    to={`/monitors/${monitor.id}/edit`}
+                    className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded-md transition-colors"
+                    title="Edit Monitor"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                  </Link>
+                  <button
+                    onClick={() => handleDelete(monitor.id)}
+                    className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 rounded-md transition-colors"
+                    title="Delete Monitor"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
-            </Link>
+            </div>
           ))}
         </div>
       )}
