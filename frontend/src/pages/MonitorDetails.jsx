@@ -13,9 +13,12 @@ const MonitorDetails = () => {
   const [checksTotalPages, setChecksTotalPages] = useState(1);
   
   const [incidents, setIncidents] = useState([]);
+  const [incidentsPage, setIncidentsPage] = useState(1);
+  const [incidentsTotalPages, setIncidentsTotalPages] = useState(1);
   
   const [isLoading, setIsLoading] = useState(true);
   const [isChecksLoading, setIsChecksLoading] = useState(false);
+  const [isIncidentsLoading, setIsIncidentsLoading] = useState(false);
   const [error, setError] = useState('');
 
   const fetchMonitorOnly = async () => {
@@ -31,18 +34,22 @@ const MonitorDetails = () => {
 
   const fetchChecksAndIncidents = async () => {
     setIsChecksLoading(true);
+    setIsIncidentsLoading(true);
     try {
       const [checksRes, incidentsRes] = await Promise.all([
         client.get(`/api/monitors/${id}/checks?limit=10&page=${checksPage}`),
-        client.get(`/api/monitors/${id}/incidents?limit=5`)
+        client.get(`/api/monitors/${id}/incidents?limit=5&page=${incidentsPage}`)
       ]);
       setChecks(checksRes.data.checks || []);
       setChecksTotalPages(checksRes.data.pagination?.totalPages || 1);
+      
       setIncidents(incidentsRes.data.incidents || []);
+      setIncidentsTotalPages(incidentsRes.data.pagination?.totalPages || 1);
     } catch (err) {
       console.error('Failed to load history');
     } finally {
       setIsChecksLoading(false);
+      setIsIncidentsLoading(false);
     }
   };
 
@@ -65,12 +72,26 @@ const MonitorDetails = () => {
     }
   };
 
+  const fetchIncidents = async (page) => {
+    setIsIncidentsLoading(true);
+    try {
+      const res = await client.get(`/api/monitors/${id}/incidents?limit=5&page=${page}`);
+      setIncidents(res.data.incidents || []);
+      setIncidentsPage(res.data.pagination?.page || 1);
+      setIncidentsTotalPages(res.data.pagination?.totalPages || 1);
+    } catch (err) {
+      console.error('Failed to load incidents');
+    } finally {
+      setIsIncidentsLoading(false);
+    }
+  };
+
   const pollData = async () => {
     try {
       const { data } = await client.get(`/api/monitors/${id}`);
       setMonitor(data.monitor);
-      // only refresh checks if on page 1
-      if (checksPage === 1) {
+      // only refresh lists if on page 1
+      if (checksPage === 1 && incidentsPage === 1) {
         fetchChecksAndIncidents();
       }
     } catch (err) {
@@ -277,32 +298,57 @@ const MonitorDetails = () => {
                 No incidents recorded. Perfect uptime!
               </div>
             ) : (
-              incidents.map(incident => (
-                <div key={incident.id} className="p-4 border border-rose-900/30 rounded-xl bg-slate-800/30 relative overflow-hidden">
-                  <div className={`absolute top-0 left-0 w-1 h-full ${incident.resolved_at ? 'bg-emerald-500' : 'bg-rose-500 animate-pulse'}`}></div>
-                  <div className="ml-2">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className={`text-xs font-semibold px-2 py-0.5 rounded ${incident.resolved_at ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
-                        {incident.resolved_at ? 'RESOLVED' : 'ACTIVE'}
-                      </span>
-                      <span className="text-xs text-slate-500">{new Date(incident.started_at).toLocaleDateString()}</span>
-                    </div>
-                    <p className="text-sm text-slate-300 font-medium mb-3">{incident.reason}</p>
-                    <div className="text-xs text-slate-400 space-y-1">
-                      <div className="flex justify-between">
-                        <span>Started:</span>
-                        <span>{new Date(incident.started_at).toLocaleTimeString()}</span>
+              <>
+                {incidents.map(incident => (
+                  <div key={incident.id} className="p-4 border border-rose-900/30 rounded-xl bg-slate-800/30 relative overflow-hidden">
+                    <div className={`absolute top-0 left-0 w-1 h-full ${incident.resolved_at ? 'bg-emerald-500' : 'bg-rose-500 animate-pulse'}`}></div>
+                    <div className="ml-2">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded ${incident.resolved_at ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
+                          {incident.resolved_at ? 'RESOLVED' : 'ACTIVE'}
+                        </span>
+                        <span className="text-xs text-slate-500">{new Date(incident.started_at).toLocaleDateString()}</span>
                       </div>
-                      {incident.resolved_at && (
+                      <p className="text-sm text-slate-300 font-medium mb-3">{incident.reason}</p>
+                      <div className="text-xs text-slate-400 space-y-1">
                         <div className="flex justify-between">
-                          <span>Resolved:</span>
-                          <span>{new Date(incident.resolved_at).toLocaleTimeString()}</span>
+                          <span>Started:</span>
+                          <span>{new Date(incident.started_at).toLocaleTimeString()}</span>
                         </div>
-                      )}
+                        {incident.resolved_at && (
+                          <div className="flex justify-between">
+                            <span>Resolved:</span>
+                            <span>{new Date(incident.resolved_at).toLocaleTimeString()}</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                ))}
+                
+                {/* Incidents Pagination Controls */}
+                {incidentsTotalPages > 1 && (
+                  <div className="flex items-center justify-between pt-2">
+                    <button
+                      onClick={() => fetchIncidents(incidentsPage - 1)}
+                      disabled={incidentsPage === 1 || isIncidentsLoading}
+                      className="flex items-center gap-1 px-3 py-1.5 text-sm text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronLeft className="w-4 h-4" /> Prev
+                    </button>
+                    <span className="text-sm text-slate-500">
+                      Page {incidentsPage} of {incidentsTotalPages}
+                    </span>
+                    <button
+                      onClick={() => fetchIncidents(incidentsPage + 1)}
+                      disabled={incidentsPage === incidentsTotalPages || isIncidentsLoading}
+                      className="flex items-center gap-1 px-3 py-1.5 text-sm text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Next <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

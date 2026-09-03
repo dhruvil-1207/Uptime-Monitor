@@ -101,8 +101,14 @@ const MonitorForm = () => {
         }
         navigate('/dashboard');
       } else {
-        // Create payload uses camelCase
-        await client.post('/api/monitors', formData);
+        const createPayload = {
+          name: formData.name,
+          url: formData.url,
+          interval_seconds: formData.intervalSeconds,
+          timeout_seconds: formData.timeoutSeconds,
+          expected_status_code: formData.expectedStatusCode
+        };
+        await client.post('/api/monitors', createPayload);
         navigate('/dashboard');
       }
     } catch (err) {
