@@ -37,8 +37,12 @@ client.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Only handle 401 if it's not the refresh endpoint and hasn't been retried
-    if (error.response?.status === 401 && !originalRequest._retry && originalRequest.url !== '/api/auth/refresh') {
+    // Only handle 401 if it's not the refresh, login, or register endpoints
+    const isAuthEndpoint = originalRequest.url?.includes('/api/auth/refresh') || 
+                           originalRequest.url?.includes('/api/auth/login') ||
+                           originalRequest.url?.includes('/api/auth/register');
+
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
       
       if (isRefreshing) {
         // If refreshing is already in progress, wait
