@@ -13,11 +13,10 @@ const REFRESH_TOKEN_EXPIRY = '7d';
 const REFRESH_COOKIE_OPTIONS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
-  sameSite: 'lax',
+  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
   maxAge: 7 * 24 * 60 * 60 * 1000,
   path: '/api/auth'
 };
-
 
 // REGISTER
 
@@ -385,7 +384,7 @@ router.post('/logout', async (req, res) => {
   res.clearCookie('refresh_token', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     path: '/api/auth'
   });
 
