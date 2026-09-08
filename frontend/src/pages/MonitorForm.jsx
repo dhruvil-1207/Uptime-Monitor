@@ -59,7 +59,7 @@ const MonitorForm = () => {
     const { name, value, type } = e.target;
     let parsedValue = value;
     
-    if (type === 'number') {
+    if (type === 'number' || name === 'intervalSeconds') {
       parsedValue = value === '' ? '' : Number(value);
     }
     
@@ -104,9 +104,9 @@ const MonitorForm = () => {
         const createPayload = {
           name: formData.name,
           url: formData.url,
-          interval_seconds: formData.intervalSeconds,
-          timeout_seconds: formData.timeoutSeconds,
-          expected_status_code: formData.expectedStatusCode
+          intervalSeconds: formData.intervalSeconds,
+          timeoutSeconds: formData.timeoutSeconds,
+          expectedStatusCode: formData.expectedStatusCode
         };
         await client.post('/api/monitors', createPayload);
         navigate('/dashboard');

@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import VerifyEmail from './pages/VerifyEmail';
 import Dashboard from './pages/Dashboard';
 import MonitorForm from './pages/MonitorForm';
 import MonitorDetails from './pages/MonitorDetails';
@@ -59,6 +60,7 @@ function AppRoutes() {
       {/* Unauthenticated Routes */}
       <Route path="/login" element={<Layout><Login /></Layout>} />
       <Route path="/register" element={<Layout><Register /></Layout>} />
+      <Route path="/verify-email" element={<Layout><VerifyEmail /></Layout>} />
       
       {/* Authenticated Routes */}
       <Route element={<ProtectedRoute />}>

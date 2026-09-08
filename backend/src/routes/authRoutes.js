@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import pool from '../config/db.js';
 import authRateLimiter from '../middleware/rateLimiter.js';
+import { sendVerificationEmail } from '../services/notificationService.js';
 const router = express.Router();
 
 const ACCESS_TOKEN_EXPIRY = '15m';
@@ -77,16 +78,20 @@ router.post('/register',authRateLimiter, async (req, res) => {
 
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
 
     const result = await pool.query(
-      `INSERT INTO users (email, password_hash)
-             VALUES ($1, $2)
+      `INSERT INTO users (email, password_hash, is_verified, verification_token_hash, verification_token_expires_at)
+             VALUES ($1, $2, FALSE, $3, NOW() + INTERVAL '24 hours')
              RETURNING id, email, created_at`,
-      [email, hashedPassword]
+      [email, hashedPassword, tokenHash]
     );
 
+    await sendVerificationEmail(email, rawToken, process.env.FRONTEND_URL);
+
     return res.status(201).json({
-      message: 'Registration successful',
+      message: 'Registration successful. Please check your email to verify your account.',
       user: result.rows[0]
     });
 
@@ -127,7 +132,7 @@ router.post('/login',authRateLimiter, async (req, res) => {
 
   try {
     const result = await pool.query(
-      `SELECT id, email, password_hash
+      `SELECT id, email, password_hash, is_verified
              FROM users
              WHERE email = $1`,
       [email]
@@ -140,6 +145,12 @@ router.post('/login',authRateLimiter, async (req, res) => {
     }
 
     const user = result.rows[0];
+
+    if (!user.is_verified) {
+      return res.status(401).json({
+        message: 'Please verify your email before logging in.'
+      });
+    }
 
     const passwordMatch = await bcrypt.compare(
       password,
@@ -193,6 +204,49 @@ router.post('/login',authRateLimiter, async (req, res) => {
     return res.status(500).json({
       message: 'Internal server error'
     });
+  }
+});
+
+
+
+// VERIFY EMAIL
+
+router.get('/verify-email', async (req, res) => {
+  const token = req.query.token;
+
+  if (!token) {
+    return res.status(400).json({ message: 'Verification token is missing' });
+  }
+
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+  try {
+    const result = await pool.query(
+      `SELECT id FROM users 
+       WHERE verification_token_hash = $1 
+         AND verification_token_expires_at > NOW()`,
+      [tokenHash]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(400).json({ message: 'Invalid or expired verification token' });
+    }
+
+    const userId = result.rows[0].id;
+
+    await pool.query(
+      `UPDATE users 
+       SET is_verified = TRUE, 
+           verification_token_hash = NULL, 
+           verification_token_expires_at = NULL 
+       WHERE id = $1`,
+      [userId]
+    );
+
+    return res.status(200).json({ message: 'Email verified successfully' });
+  } catch (err) {
+    console.error('Verify email error:', err);
+    return res.status(500).json({ message: 'Internal server error' });
   }
 });
 

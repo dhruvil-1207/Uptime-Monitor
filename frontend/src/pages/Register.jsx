@@ -21,8 +21,6 @@ const Register = () => {
     try {
       await register(email, password);
       setSuccess(true);
-      // Optional: automatically navigate to login after a short delay
-      setTimeout(() => navigate('/login'), 3000);
     } catch (err) {
       if (err.response?.status === 409 || err.response?.status === 400) {
         setError(err.response.data.message || 'Please check the information you entered.');
@@ -54,7 +52,7 @@ const Register = () => {
             <CheckCircle2 className="w-8 h-8" />
           </div>
           <h3 className="text-xl font-medium text-white mb-2">Registration successful!</h3>
-          <p className="text-slate-400 mb-6 text-sm">You can now sign in with your credentials.</p>
+          <p className="text-slate-400 mb-6 text-sm">Please check your entered email and verify via the verify link given to you.</p>
           <Link
             to="/login"
             className="inline-block w-full py-2.5 px-4 bg-primary hover:bg-primary-hover text-white rounded-lg font-medium transition-colors"
