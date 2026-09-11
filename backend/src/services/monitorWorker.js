@@ -54,17 +54,17 @@ const processDueMonitors = async () => {
         if (notification) {
           try {
             if (notification.type === 'DOWN') {
-              await sendDownNotification(
-                monitor.email,
-                monitor,
-                notification.incident
-              );
+              // await sendDownNotification(
+              //   monitor.email,
+              //   monitor,
+              //   notification.incident
+              // );
             } else if (notification.type === 'RECOVERY') {
-              await sendRecoveryNotification(
-                monitor.email,
-                monitor,
-                notification.incident
-              );
+              // await sendRecoveryNotification(
+              //   monitor.email,
+              //   monitor,
+              //   notification.incident
+              // );
             }
           } catch (err) {
             console.error(

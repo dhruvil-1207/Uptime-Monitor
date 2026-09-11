@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import pool from '../config/db.js';
 import authRateLimiter from '../middleware/rateLimiter.js';
-import { sendVerificationEmail } from '../services/notificationService.js';
+
 const router = express.Router();
 
 const ACCESS_TOKEN_EXPIRY = '15m';
@@ -77,20 +77,16 @@ router.post('/register',authRateLimiter, async (req, res) => {
 
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
-    const rawToken = crypto.randomBytes(32).toString('hex');
-    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
 
     const result = await pool.query(
-      `INSERT INTO users (email, password_hash, is_verified, verification_token_hash, verification_token_expires_at)
-             VALUES ($1, $2, FALSE, $3, NOW() + INTERVAL '24 hours')
+      `INSERT INTO users (email, password_hash, is_verified)
+             VALUES ($1, $2, TRUE)
              RETURNING id, email, created_at`,
-      [email, hashedPassword, tokenHash]
+      [email, hashedPassword]
     );
 
-    await sendVerificationEmail(email, rawToken, process.env.FRONTEND_URL);
-
     return res.status(201).json({
-      message: 'Registration successful. Please check your email to verify your account.',
+      message: 'Registration successful.',
       user: result.rows[0]
     });
 
