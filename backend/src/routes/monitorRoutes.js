@@ -1,6 +1,6 @@
 import express from 'express';
 import authenticate from '../middleware/authenticate.js';
-import { createMonitor, getMonitors, getMonitor, updateMonitor, updateMonitorStatus, deleteMonitor, getMonitorChecks, getMonitorIncidents } from '../controllers/monitorController.js';
+import { createMonitor, getMonitors, getMonitor, updateMonitor, updateMonitorStatus, deleteMonitor, getMonitorChecks, getMonitorIncidents, getMonitorHistory } from '../controllers/monitorController.js';
 
 const router = express.Router();
 
@@ -11,6 +11,7 @@ router.get('/', getMonitors);
 router.post('/', createMonitor);
 
 // Specific sub-routes — BEFORE /:id
+router.get('/:id/history', getMonitorHistory);
 router.get('/:id/checks', getMonitorChecks);
 router.get('/:id/incidents', getMonitorIncidents);
 router.patch('/:id/status', updateMonitorStatus);
