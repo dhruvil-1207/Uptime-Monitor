@@ -1,6 +1,9 @@
 import express from 'express';
 import authenticate from '../middleware/authenticate.js';
-import { createMonitor, getMonitors, getMonitor, updateMonitor, updateMonitorStatus, deleteMonitor, getMonitorChecks, getMonitorIncidents, getMonitorHistory } from '../controllers/monitorController.js';
+import { createMonitor, getMonitors, getMonitor, updateMonitor, updateMonitorStatus, deleteMonitor } from '../controllers/monitorController.js';
+import { getMonitorChecks } from '../controllers/checkController.js';
+import { getMonitorIncidents } from '../controllers/incidentController.js';
+import { getMonitorHistory } from '../controllers/analyticsController.js';
 
 const router = express.Router();
 
@@ -20,6 +23,5 @@ router.patch('/:id/status', updateMonitorStatus);
 router.get('/:id', getMonitor);
 router.patch('/:id', updateMonitor);
 router.delete('/:id', deleteMonitor);
-
 
 export default router;
