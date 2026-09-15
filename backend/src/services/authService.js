@@ -2,6 +2,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import pool from '../config/db.js';
+import { sendVerificationEmail } from './notificationService.js';
 
 const ACCESS_TOKEN_EXPIRY = '15m';
 const REFRESH_TOKEN_EXPIRY = '7d';
@@ -13,7 +14,7 @@ class AuthError extends Error {
   }
 }
 
-const registerUser = async (email, password) => {
+const registerUser = async (email, password, frontendUrl) => {
   if (!email || !password) {
     throw new AuthError(400, 'Email and password are required');
   }
@@ -47,12 +48,21 @@ const registerUser = async (email, password) => {
 
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationTokenHash = crypto
+      .createHash('sha256')
+      .update(verificationToken)
+      .digest('hex');
 
     const result = await pool.query(
-      `INSERT INTO users (email, password_hash, is_verified)
-       VALUES ($1, $2, TRUE)
+      `INSERT INTO users (email, password_hash, is_verified, verification_token_hash, verification_token_expires_at)
+       VALUES ($1, $2, FALSE, $3, NOW() + INTERVAL '24 hours')
        RETURNING id, email, created_at`,
-      [email, hashedPassword]
+      [email, hashedPassword, verificationTokenHash]
+    );
+
+    sendVerificationEmail(email, verificationToken, frontendUrl).catch(err => 
+      console.error(`Background verification email failed: ${err}`)
     );
 
     return result.rows[0];

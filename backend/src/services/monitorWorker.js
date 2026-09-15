@@ -54,17 +54,17 @@ const processDueMonitors = async () => {
         if (notification) {
           try {
             if (notification.type === 'DOWN') {
-              // await sendDownNotification(
-              //   monitor.email,
-              //   monitor,
-              //   notification.incident
-              // );
+              sendDownNotification(
+                monitor.email,
+                monitor,
+                notification.incident
+              ).catch(err => console.error(`Background email failed: ${err}`));
             } else if (notification.type === 'RECOVERY') {
-              // await sendRecoveryNotification(
-              //   monitor.email,
-              //   monitor,
-              //   notification.incident
-              // );
+              sendRecoveryNotification(
+                monitor.email,
+                monitor,
+                notification.incident
+              ).catch(err => console.error(`Background email failed: ${err}`));
             }
           } catch (err) {
             console.error(

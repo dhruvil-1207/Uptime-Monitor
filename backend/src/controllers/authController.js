@@ -18,7 +18,8 @@ const REFRESH_COOKIE_OPTIONS = {
 const register = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await registerUser(email, password);
+    const frontendUrl = req.headers.origin || process.env.FRONTEND_URL;
+    const user = await registerUser(email, password, frontendUrl);
     
     return res.status(201).json({
       message: 'Registration successful.',
